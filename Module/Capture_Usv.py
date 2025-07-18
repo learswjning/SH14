@@ -9,7 +9,7 @@ class Capture:
 
         for target in targets:
             dist = np.linalg.norm(np.array(vehicle_position) - np.array(target.position))
-            if dist <= self.capture_range:
+            if dist <= self.capture_range and target.T_detect is not None:
                 captured.append((target.type, target.id, target.position))
         
         self.captured_single = captured if captured else None

@@ -1,3 +1,8 @@
+import os
+import sys
+import time
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from Utils.Manager import Manager  # 假设Manager放在Utils文件夹
 from Utils.Refresher import TargetRefresher
 from Utils.Scorer import score1, score2
@@ -27,6 +32,8 @@ manager.init_objects(uavs, usvs, targets, t=0)
 
 # 主仿真循环
 max_step = 144000
+target_refresh_enabled = True
+capture_count = 0
 
 for step in range(max_step):
     # 控制信息（模拟简单控制）
@@ -55,10 +62,12 @@ for step in range(max_step):
         captured = manager.get_captured('usv', uid)
         print(f"USV {uid} 探测到目标: {detected1}")
         print(f"USV {uid} 捕获的目标: {captured}")
-    # print(f"当前剩余目标数: {len(manager.targets)}")
-    # print(f"探测时间记录: {manager.time1}")
-    # print(f"捕获时间记录: {manager.time2}")
+    print(f"当前剩余目标数: {len(manager.targets)}")
+    print(f"探测时间记录: {manager.time1}")
+    print(f"捕获时间记录: {manager.time2}")
     P = len(manager.time1) / (refresher.current_id - 1)
     S1 = score1(manager.time1)
     S2 = score2(manager.time2)
     print(f"P = {P}, S1 = {S1}, S2 = {S2}, Total = {P * (S1 + S2)}")
+    
+    time.sleep(0.05)

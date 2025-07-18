@@ -107,7 +107,7 @@ class TrajectoryVisualizer2D:
                     self.draw_circle(position=pos,
                                      radius=obj.detection_range)
 
-        self.ax.legend(fontsize=self.legend_fontsize)
+        #self.ax.legend(fontsize=self.legend_fontsize)
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
 

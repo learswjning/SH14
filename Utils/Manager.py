@@ -11,6 +11,7 @@ class Manager:
     def __init__(self):
         self.vehicles = {}  # (type,id) -> object
         self.targets = {}   # id -> object
+        self.captured = None
         self.visualizer = None
         self.labels = []
         self.point_colors = []
@@ -43,15 +44,34 @@ class Manager:
             self.trajectory_visible.append(False)
 
     def init_targets(self, target_list, t):
-        for id_, pos, theta in target_list:
+        for id_ in target_list:
             id_ = str(id_)
-            obj = Target(init_position=pos, init_theta=theta, id=id_, init_t=t)
+            obj = Target(id=id_, init_t=t)
             self.targets[id_] = obj
             self.labels.append(f"Target{id_}")
             self.point_colors.append("k")
             self.line_colors.append("k")
             self.markers.append("x")
             self.trajectory_visible.append(False)
+            
+    def update_targets(self, new_target_list, t):
+        for id_ in new_target_list:
+            id_ = str(id_)
+            obj = Target(id=id_, init_t=t)
+            self.targets[id_] = obj
+            self.labels.append(f"Target{id_}")
+            self.point_colors.append("k")
+            self.line_colors.append("k")
+            self.markers.append("x")
+            self.trajectory_visible.append(False)
+            
+            self.visualizer.labels.append(f"Target{id_}")
+            self.visualizer.point_colors.append("k")
+            self.visualizer.line_colors.append("k")
+            self.visualizer.markers.append("x")
+            self.visualizer.trajectory_visible.append(False)
+            self.visualizer.history[f"Target{id_}"] = []
+        
 
     def init_objects(self, uavs, usvs, targets, t):
         self.init_uavs(uavs)
@@ -132,7 +152,7 @@ class Manager:
             elif typ.lower() == "target":
                 target = self.targets.get(id_)
                 if target:
-                    target.update(v, omega)
+                    target.update()
 
         # 计分更新
         for target in self.targets.values():
@@ -145,7 +165,10 @@ class Manager:
                           for vehicle in self.vehicles.values())
 
             target.score_update(t=t, detect=detect, capture=capture)
-
+            if target.T_detect is not None and target.time1_flag == False:
+                time1, time2 = target.score()
+                self.time1.append(time1)
+                target.time1_flag = True
 
         # 检查捕获目标，删除
         to_remove = set()
@@ -165,8 +188,6 @@ class Manager:
         for rid in to_remove:
             target_obj = self.targets[rid]
             time1, time2 = target_obj.score()
-            if time1 is not None:
-                self.time1.append(time1)
             if time2 is not None:
                 self.time2.append(time2)
             self.targets.pop(rid)
@@ -191,6 +212,24 @@ class Manager:
         if vehicle and hasattr(vehicle, 'detected'):
             return vehicle.detected
         return None
+    
+    '''
+    def get_detected_all(self):
+        """
+        获取检测目标列表总和（去重）
+        """
+        all_detected = []
+        for typ in ['uav', 'usv']:
+            for id_ in ['1', '2', '3', '4']:
+                vehicle = self.vehicles.get((typ.lower(), str(id_)))
+                if vehicle and getattr(vehicle, 'detected', None):
+                    all_detected.extend(vehicle.detected[0][1])
+        #print(all_detected)
+        # 去重
+        total_detected = list(set(all_detected))
+        return total_detected
+        #return all_detected
+    '''
 
     def get_captured(self, typ, id_):
         """
@@ -200,6 +239,24 @@ class Manager:
         if vehicle and hasattr(vehicle, 'captured'):
             return vehicle.captured
         return None
+    
+    '''
+    def get_captured_all(self):
+        """
+        获取 USV 1、2、3、4 的捕获目标列表总和（去重）
+        """
+        all_captured = []
+        typ = 'usv'
+        for id_ in ['1', '2', '3', '4']:
+            vehicle = self.vehicles.get((typ.lower(), str(id_)))
+            if vehicle and getattr(vehicle, 'captured', None):
+                all_captured.extend(vehicle.captured[0][1])
+        #print(all_captured)
+        # 去重
+        total_captured = list(set(all_captured))
+        return total_captured
+        #return all_captured
+    '''
 
     def get_state(self, typ, id_):
         """
@@ -211,30 +268,3 @@ class Manager:
             heading = vehicle.vehicle_heading
             return [pos, heading]
         return None
-
-    def add_targets(self, new_targets, t):
-        for id_, pos, theta in new_targets:
-            id_ = str(id_)
-            if id_ in self.targets:
-                print(f"目标 {id_} 已存在，跳过添加。")
-                continue
-            obj = Target(init_position=pos, init_theta=theta, id=id_, init_t=t)
-            self.targets[id_] = obj
-
-            label = f"Target{id_}"
-            self.labels.append(label)
-            self.point_colors.append("k")
-            self.line_colors.append("k")
-            self.markers.append("x")
-            self.trajectory_visible.append(False)
-
-            self.visualizer.labels.append(label)
-            self.visualizer.point_colors.append("k")
-            self.visualizer.line_colors.append("k")
-            self.visualizer.markers.append("x")
-            self.visualizer.trajectory_visible.append(False)
-
-            if hasattr(self.visualizer, 'history'):
-                self.visualizer.history[label] = []
-
-        self.visualizer.num = len(self.visualizer.labels)
