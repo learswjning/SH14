@@ -6,8 +6,8 @@ from Module.Sensor_Uav import Sensor
 from Module.Collision_Uav import Collision
 
 class Uav(BaseVehicle, Sensor):
-    def __init__(self, init_position, init_theta, id=0, max_turn_radius=100, detection_range=3000, fov_deg=60, collision_radius=50, dt=0.05):
-        BaseVehicle.__init__(self, init_position=init_position, init_theta=init_theta, max_turn_radius=max_turn_radius, dt=dt)
+    def __init__(self, init_position, init_theta, id=0, min_turn_radius=100, detection_range=3000, fov_deg=60, collision_radius=50, max_speed=33.33, dt=0.05):
+        BaseVehicle.__init__(self, init_position=init_position, init_theta=init_theta, min_turn_radius=min_turn_radius, max_speed=max_speed, dt=dt)
         Sensor.__init__(self, detection_range=detection_range, fov_deg=fov_deg)
         Collision.__init__(self, radius=collision_radius)
         self.id = id
