@@ -213,7 +213,7 @@ class Manager:
             return vehicle.detected
         return None
     
-    '''
+    
     def get_detected_all(self):
         """
         获取检测目标列表总和（去重）
@@ -223,13 +223,12 @@ class Manager:
             for id_ in ['1', '2', '3', '4']:
                 vehicle = self.vehicles.get((typ.lower(), str(id_)))
                 if vehicle and getattr(vehicle, 'detected', None):
-                    all_detected.extend(vehicle.detected[0][1])
-        #print(all_detected)
+                    for i in range(len(vehicle.detected)):
+                        all_detected.extend(vehicle.detected[i][1])
         # 去重
         total_detected = list(set(all_detected))
         return total_detected
-        #return all_detected
-    '''
+    
 
     def get_captured(self, typ, id_):
         """
@@ -240,7 +239,6 @@ class Manager:
             return vehicle.captured
         return None
     
-    '''
     def get_captured_all(self):
         """
         获取 USV 1、2、3、4 的捕获目标列表总和（去重）
@@ -250,13 +248,11 @@ class Manager:
         for id_ in ['1', '2', '3', '4']:
             vehicle = self.vehicles.get((typ.lower(), str(id_)))
             if vehicle and getattr(vehicle, 'captured', None):
-                all_captured.extend(vehicle.captured[0][1])
-        #print(all_captured)
+                for i in range(len(vehicle.captured)):
+                    all_captured.extend(vehicle.captured[i][1])
         # 去重
         total_captured = list(set(all_captured))
         return total_captured
-        #return all_captured
-    '''
 
     def get_state(self, typ, id_):
         """

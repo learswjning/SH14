@@ -17,7 +17,7 @@ class Target():
         self.dt = dt
         self.max_speed = max_speed  # 最大速度
 
-        self.coords_list = read_random_line_as_coordinates("/home/learning/zuser/File/SH14/region_trajectories_start_modified.csv")
+        self.coords_list = read_random_line_as_coordinates("Vehicle/region_trajectories_start_modified.csv")
         self.current_index = 0
 
         self.position = self.coords_list[0]

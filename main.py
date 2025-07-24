@@ -1,4 +1,4 @@
-from Utils.Manager import Manager  # 假设Manager放在Utils文件夹
+from Utils.Manager import Manager
 from Utils.Refresher import TargetRefresher
 from Utils.Scorer import score1, score2
 
@@ -31,8 +31,8 @@ max_step = 144000
 for step in range(max_step):
     # 控制信息（模拟简单控制）
     controls = [
-        ["uav", "1", 0, 0],
-        ["uav", "2", 0, 0],
+        ["uav", "1", 50, 0], # 类型、编号、线速度、角速度
+        ["uav", "2", 50, 0],
         ["usv", "1", 0, 0],
         ["usv", "2", 0, 0],
         ["usv", "3", 0, 0],
@@ -48,13 +48,15 @@ for step in range(max_step):
 
     print(f"\n=== Step {step} 状态 ===")
     for uid in ['1', '2']:
-        detected = manager.get_detected('uav', uid)
-        print(f"UAV {uid} 探测到目标: {detected}")
+        # detected = manager.get_detected('uav', uid)
+        print(f"UAV {uid} 探测到目标: {manager.get_detected('uav', uid)}")
     for uid in ['1', '2', '3', '4']:
-        detected1 = manager.get_detected('usv', uid)
-        captured = manager.get_captured('usv', uid)
-        print(f"USV {uid} 探测到目标: {detected1}")
-        print(f"USV {uid} 捕获的目标: {captured}")
+        # detected1 = manager.get_detected('usv', uid)
+        # captured = manager.get_captured('usv', uid)
+        print(f"USV {uid} 探测到目标: {manager.get_detected('usv', uid)}")
+        print(f"USV {uid} 捕获的目标: {manager.get_captured('usv', uid)}")
+    print(f"总探测目标列表: {manager.get_detected_all()}")
+    print(f"总捕获目标列表: {manager.get_captured_all()}")
     # print(f"当前剩余目标数: {len(manager.targets)}")
     # print(f"探测时间记录: {manager.time1}")
     # print(f"捕获时间记录: {manager.time2}")

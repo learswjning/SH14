@@ -31,7 +31,7 @@ class BaseVehicle:
 
         # 更新朝向
         self.vehicle_heading += omega * self.dt
-        self.vehicle_heading = (self.vehicle_heading + math.pi) % (2 * math.pi) - math.pi
+        self.vehicle_heading = (self.vehicle_heading + math.pi) % (2 * math.pi) - math.pi # [-pi, pi]
 
         # 更新位置
         dx = v * math.cos(self.vehicle_heading) * self.dt
