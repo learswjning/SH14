@@ -65,12 +65,18 @@ controls = [
 
 #### 三、实时已知参数
 
+##### main.py
+
 - 指定 `UAV` 探测列表 `manager.get_detected('uav', uid) -> List[Target]`
 - 指定 `USV` 探测列表 `manager.get_detected('usv', uid) -> List[Target]`
 - 指定 `USV` 捕获列表 `manager.get_captured('usv', uid) -> List[Target]`
 - 总探测列表（去重）`manager.get_detected_all() -> List[Target.id]`
 - 总捕获列表（去重）`manager.get_captured_all() -> List[Target.id]`
 - 指定载具位置与朝向 `manager.get_state(typ, id) -> [pos, heading]`
-
 - 实时仿真时间 `step * 0.05s`
+- 目标出现时刻 `init_step = 12000`
+
+##### Utils/Refresher.py
+
+- 目标刷新步长 `refresh_interval = 12000`
 
