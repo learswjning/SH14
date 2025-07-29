@@ -22,4 +22,5 @@ class Usv(BaseVehicle, Sensor):
         Collision.update(self, self_type=self.type, self_id=self.id, self_position=self.position, others=usvs)
         Capture.update(self, vehicle_position=self.position, targets=targets)
         if self.captured_single is not None:
-            self.captured.append(self.captured_single)
+            for i in range(len(self.captured_single)):
+                self.captured.append(self.captured_single[i])

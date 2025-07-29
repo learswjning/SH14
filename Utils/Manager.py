@@ -43,16 +43,16 @@ class Manager:
             self.markers.append("s")
             self.trajectory_visible.append(False)
 
-    def init_targets(self, target_list, t):
-        for id_ in target_list:
-            id_ = str(id_)
-            obj = Target(id=id_, init_t=t)
-            self.targets[id_] = obj
-            self.labels.append(f"Target{id_}")
-            self.point_colors.append("k")
-            self.line_colors.append("k")
-            self.markers.append("x")
-            self.trajectory_visible.append(False)
+    # def init_targets(self, target_list, t):
+    #     for id_ in target_list:
+    #         id_ = str(id_)
+    #         obj = Target(id=id_, init_t=t)
+    #         self.targets[id_] = obj
+    #         self.labels.append(f"Target{id_}")
+    #         self.point_colors.append("k")
+    #         self.line_colors.append("k")
+    #         self.markers.append("x")
+    #         self.trajectory_visible.append(False)
             
     def update_targets(self, new_target_list, t):
         for id_ in new_target_list:
@@ -73,10 +73,10 @@ class Manager:
             self.visualizer.history[f"Target{id_}"] = []
         
 
-    def init_objects(self, uavs, usvs, targets, t):
+    def init_objects(self, uavs, usvs):
         self.init_uavs(uavs)
         self.init_usvs(usvs)
-        self.init_targets(targets, t)
+        # self.init_targets(targets, t)
 
         self.visualizer = TrajectoryVisualizer2D(
             labels=self.labels,
@@ -160,9 +160,11 @@ class Manager:
                          for vehicle in self.vehicles.values()
                          if hasattr(vehicle, 'detected') and vehicle.detected
                          for d in vehicle.detected)
-
-            capture = any(target.id in (e[1] for g in getattr(vehicle, 'captured', []) for e in g)
-                          for vehicle in self.vehicles.values())
+            
+            capture = any(
+                target.id == e[1]
+                for vehicle in self.vehicles.values()
+                for e in getattr(vehicle, 'captured', []))
 
             target.score_update(t=t, detect=detect, capture=capture)
             if target.T_detect is not None and target.time1_flag == False:
@@ -174,15 +176,12 @@ class Manager:
         to_remove = set()
         for (typ, id_), vehicle in self.vehicles.items():
             if hasattr(vehicle, 'captured') and vehicle.captured:
-                for captured_group in vehicle.captured:
-                    for (t, tid, pos) in captured_group:
-                        if tid in self.targets:
-                            #print(f"Target {tid} 被 {typ.upper()}{id_} 捕获，移除目标")
-                            to_remove.add(tid)
+                for (t, tid, pos) in vehicle.captured:
+                    if tid in self.targets:
+                        to_remove.add(tid)
         for tid, target in self.targets.items():
             x, y = target.position
             if not (0 <= x <= 9260 and 0 <= y <= 9260):
-                #print(f"Target {tid} 越界，移除目标")
                 to_remove.add(tid)
                             
         for rid in to_remove:

@@ -4,7 +4,8 @@ from Utils.Scorer import score1, score2
 
 # 初始化系统
 manager = Manager()
-refresher = TargetRefresher(min_interval=200, max_interval=600)
+refresher = TargetRefresher()
+init_step = 12000
 
 # UAV 和 USV 初始配置
 uavs = [
@@ -17,18 +18,20 @@ usvs = [
     ["3", [0, 4130], 0],
     ["4", [0, 3130], 0]
 ]
-targets = [
-    '1',
-    '2'
-]
+targets = ['1', '2']
 
 # 初始化对象
-manager.init_objects(uavs, usvs, targets, t=0)
+manager.init_objects(uavs, usvs)
 
 # 主仿真循环
 max_step = 144000
 
 for step in range(max_step):
+    
+    # 初始化 Target，可修改
+    if step == init_step:
+        manager.update_targets(targets, t=step)
+    
     # 控制信息（模拟简单控制）
     controls = [
         ["uav", "1", 50, 0], # 类型、编号、线速度、角速度
