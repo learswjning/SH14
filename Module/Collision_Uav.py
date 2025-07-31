@@ -2,12 +2,13 @@ import numpy as np
 import sys
 
 class Collision:
-    def __init__(self, radius):
+    def __init__(self, radius, area_size=9260):
         """
         初始化碰撞检测器
         :param radius: 判定为碰撞的最小距离（单位：米）
         """
         self.radius = radius
+        self.area_size = area_size
 
     def update(self, self_type, self_id, self_position, others):
         """
@@ -32,5 +33,9 @@ class Collision:
             if dist <= self.radius:
                 print(f"{self_type}_{self_id} 与 {obj.type}_{obj.id} 相撞")
                 sys.exit(1)
+                
+        # 边界检测：越过边界则退出仿真
+        if (self_pos[0] < 0 or self_pos[0] > self.area_size or self_pos[1] < 0 or self_pos[1] > self.area_size):
+            sys.exit(1)
 
         return None
