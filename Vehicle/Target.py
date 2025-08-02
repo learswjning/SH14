@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from Utils.Points import read_random_line_as_coordinates
 
 class Target():
-    def __init__(self, id, init_t, dt=0.05, max_speed=7.72):
+    def __init__(self, id, init_t, dt=0.5, max_speed=7.72):
         self.id = id
         self.type = 'target'
         self.T_entry = init_t
@@ -40,7 +40,7 @@ class Target():
 
         self.position = [newx, newy]
         
-        if math.hypot(dx, dy) < 0.5:
+        if math.hypot(dx, dy) < 4:
             self.current_index += 1
             return
 

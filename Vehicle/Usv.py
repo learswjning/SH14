@@ -7,7 +7,7 @@ from Module.Collision_Usv import Collision
 from Module.Capture_Usv import Capture
 
 class Usv(BaseVehicle, Sensor):
-    def __init__(self, init_position, init_theta, id, min_turn_radius=20, detection_range=800, collision_radius=100, capture_range=100, max_speed=10.28, dt=0.05):
+    def __init__(self, init_position, init_theta, id, min_turn_radius=20, detection_range=800, collision_radius=100, capture_range=100, max_speed=10.28, dt=0.5):
         BaseVehicle.__init__(self, init_position=init_position, init_theta=init_theta, min_turn_radius=min_turn_radius, max_speed=max_speed, dt=dt)
         Sensor.__init__(self, detection_range=detection_range)
         Collision.__init__(self, radius=collision_radius)

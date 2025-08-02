@@ -28,7 +28,12 @@ class TrajectoryVisualizer2D:
                  label_fontsize=12,
                  title_fontsize=14,
                  legend_fontsize=12,
-                 tick_fontsize=12):
+                 tick_fontsize=12,
+                 enable_swept_area=False,
+                 swept_area_start_time=300,
+                 max_history_fov=500,
+                 max_traj=2000):
+        
         self.labels = labels
         self.num = len(labels)
         self.history = {label: [] for label in labels}
@@ -48,6 +53,16 @@ class TrajectoryVisualizer2D:
         plt.ion()
         self.fig, self.ax = plt.subplots()
         self._setup_plot()
+        
+        self.swept_fovs = {label: [] for label in self.labels}
+
+        # 可控参数
+        self.enable_swept_area = enable_swept_area
+        self.swept_area_start_time = swept_area_start_time
+        self.MAX_HISTORY_FOV = max_history_fov
+        self.MAX_TRAJ = max_traj
+
+        self.time_text = None  # 新增：存储仿真时间文本对象
 
     def _setup_plot(self):
         self.ax.set_xlim(*self.limits[0])
@@ -68,6 +83,58 @@ class TrajectoryVisualizer2D:
             self.ax.set_title(title, fontsize=self.title_fontsize)
         elif step is not None:
             self.ax.set_title(f"Step {step}", fontsize=self.title_fontsize)
+            
+        # ==== 新增：显示仿真时间 ====
+        # 假定每步0.5秒（如有不同请自行调整）
+        if step is not None:
+            # 确保step是数值类型
+            if isinstance(step, (list, tuple)):
+                print(f"Warning: step参数是序列类型: {step}, 使用第一个元素")
+                step_value = step[0] if len(step) > 0 else 0
+            else:
+                step_value = step
+            
+            # 进一步确保step_value是数字类型
+            try:
+                step_value = float(step_value)
+            except (ValueError, TypeError):
+                print(f"Warning: 无法将step_value转换为数字: {step_value}, 使用默认值0")
+                step_value = 0
+                
+            sim_time = step_value * 0.5  # 单位：秒
+            # 移除上一次的时间文本
+            if self.time_text is not None:
+                try:
+                    self.time_text.remove()
+                except Exception:
+                    pass
+            # 左上角显示（坐标系用axes百分比）
+            self.time_text = self.ax.text(
+                0.01, 0.99,
+                f"Time: {sim_time:.1f}s",
+                transform=self.ax.transAxes,
+                fontsize=14,
+                verticalalignment='top',
+                horizontalalignment='left',
+                color='k',
+                bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round')
+            )
+        # =========================
+
+        for label in self.labels:
+            if label not in self.swept_fovs:
+                self.swept_fovs[label] = []
+        
+        enable_history = (
+            self.enable_swept_area and
+            step is not None and
+            (step_value if isinstance(step, (list, tuple)) else step) * 0.5 >= self.swept_area_start_time
+        )
+        
+        if enable_history:
+            for i, label in enumerate(self.labels):
+                for fov_param in self.swept_fovs[label]:
+                    self.draw_fov(*fov_param, color='lightblue', alpha=0.25)
 
         for i, obj in enumerate(objects):
             label = self.labels[i]
@@ -99,6 +166,18 @@ class TrajectoryVisualizer2D:
                         heading_vec = np.array([np.cos(heading), np.sin(heading)])
                     else:
                         heading_vec = heading
+                        
+                    # 只在累计区域功能打开且到达指定时间后才累计，每10步记录一次
+                    current_step = step_value if isinstance(step, (list, tuple)) else step
+                    if enable_history and (step is not None) and (current_step % 10 == 0):
+                        if label not in self.swept_fovs:
+                            self.swept_fovs[label] = []
+                        self.swept_fovs[label].append(
+                            (pos.copy(), heading_vec.copy(), obj.fov_rad, obj.detection_range)
+                        )
+                        if len(self.swept_fovs[label]) > self.MAX_HISTORY_FOV:
+                            self.swept_fovs[label] = self.swept_fovs[label][-self.MAX_HISTORY_FOV:]
+
                     self.draw_fov(position=pos,
                                   heading=heading_vec,
                                   fov_rad=obj.fov_rad,
@@ -106,8 +185,8 @@ class TrajectoryVisualizer2D:
                 elif obj.sensor_type == 'circle':
                     self.draw_circle(position=pos,
                                      radius=obj.detection_range)
-
-        #self.ax.legend(fontsize=self.legend_fontsize)
+        # TODO：
+        # self.ax.legend(fontsize=self.legend_fontsize)
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
 
@@ -134,4 +213,3 @@ class TrajectoryVisualizer2D:
     def close(self):
         plt.ioff()
         plt.show()
-

@@ -20,6 +20,9 @@ class Manager:
         self.trajectory_visible = []
         self.time1 = []
         self.time2 = []
+        self.enable_swept_area = False      # uav历史探测区域绘制开关
+        self.swept_area_start_time = 300    # 开始绘制uav历史区域的时刻(s)
+        
 
     def init_uavs(self, uav_list):
         for id_, pos, theta in uav_list:
@@ -54,7 +57,7 @@ class Manager:
     #         self.markers.append("x")
     #         self.trajectory_visible.append(False)
             
-    def update_targets(self, new_target_list, t):
+    def add_targets(self, new_target_list, t):
         for id_ in new_target_list:
             id_ = str(id_)
             obj = Target(id=id_, init_t=t)
@@ -84,7 +87,9 @@ class Manager:
             line_colors=self.line_colors,
             markers=self.markers,
             trajectory_visible=self.trajectory_visible,
-            limits=((0, 9260), (0, 9260))
+            limits=((0, 9260), (0, 9260)),
+            enable_swept_area=self.enable_swept_area,
+            swept_area_start_time=self.swept_area_start_time
         )
 
     def sync_visualizer_targets(self):
@@ -201,7 +206,7 @@ class Manager:
         all_targets_sorted = [self.targets[k] for k in sorted(self.targets.keys())]
         all_objs.extend(all_targets_sorted)
 
-        self.visualizer.update(all_objs, title="UAV-USV-Target 状态")
+        self.visualizer.update(all_objs, step=t, title="UAV-USV-Target 状态")
 
     def get_detected(self, typ, id_):
         """
@@ -212,6 +217,19 @@ class Manager:
             return vehicle.detected
         return None
     
+    def get_detected_usv(self):
+        """
+        获取usv检测目标列表总和（去重）
+        """
+        all_detected = []
+        for id_ in ['1', '2', '3', '4']:
+            vehicle = self.vehicles.get(("usv", str(id_)))
+            if vehicle and getattr(vehicle, 'detected', None):
+                for i in range(len(vehicle.detected)):
+                    all_detected.extend(vehicle.detected[i][1])
+        # 去重
+        total_detected = list(set(all_detected))
+        return total_detected
     
     def get_detected_all(self):
         """

@@ -1,3 +1,4 @@
+# --- Target 随机刷新 --- #
 # import random
 # import math
 # import os
@@ -28,16 +29,18 @@
 #             return new_targets
 #         else:
 #             return []
+
+# --- Target 定时刷新 --- #
 import os
 import sys
 import random
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 class TargetRefresher:
-    def __init__(self, refresh_interval=12000, area_size=9260, start_id=3):
+    def __init__(self, refresh_interval=1200, area_size=9260, start_id=3):
         self.refresh_interval = refresh_interval
         self.area_size = area_size
-        self.next_refresh_step = 12000
+        self.next_refresh_step = 1200
         self.current_id = start_id
 
     def refresh(self, current_step):
