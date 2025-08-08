@@ -1,3 +1,4 @@
+import os
 from Utils.Manager import Manager
 from Utils.Refresher import TargetRefresher
 from Controller.control import UAVController
@@ -9,7 +10,9 @@ manager = Manager()
 refresher = TargetRefresher()
 uav_controller = UAVController() # UAV 控制器
 usv_controller = USVController() # USV 控制器
-init_step = 1200 # 自定义：Target 首次出现时刻
+init_step = 1 # 自定义：Target 首次出现时刻
+# mode = "powerless"
+mode = "powerful"
 
 
 # --- UAV USV 初始化 --- #
@@ -26,8 +29,11 @@ usvs = [
 
 manager.init_objects(uavs, usvs)
 
+# --- UAV-USV 控制器连接 --- #
+uav_controller.set_usv_states_ref(usv_controller.usv_states)  # 🔥 关键：建立USV状态引用
+
 # --- 仿真主循环 --- #
-max_step = 144000
+max_step = 14400
 
 for step in range(max_step):
     
@@ -66,10 +72,10 @@ for step in range(max_step):
         controls.append(["target", tid, 0, 0])
         
     # --- 更新状态 --- #
-    manager.update(controls, t=step)
+    manager.update(controls, t=step, mode=mode)
     
     # --- 刷新目标 --- #
-    new_target_list = refresher.refresh(step)
+    new_target_list = refresher.refresh(step, manager)
     manager.add_targets(new_target_list, t=step)
 
     # --- 打印系统状态 --- #
@@ -82,11 +88,15 @@ for step in range(max_step):
         print(f"USV {uid} 探测到目标: {manager.get_detected('usv', uid)}")
         print(f"USV {uid} 捕获的目标: {manager.get_captured('usv', uid)}")
         
-    print(f"总探测目标列表: {manager.get_detected_all()}")
-    print(f"总捕获目标列表: {manager.get_captured_all()}")
-
+    print(f"实时总探测目标列表: {manager.get_detected_all_timely()}")
+    print(f"累积总探测目标列表: {manager.get_detected_all()}")
+    print(f"累积总捕获目标列表: {manager.get_captured_all()}")
+    
     # --- 得分情况 --- #
     P = len(manager.time1) / (refresher.current_id - 1)
     S1 = score1(manager.time1)
     S2 = score2(manager.time2)
     print(f"P = {P}, S1 = {S1}, S2 = {S2}, Total = {P * (S1 + S2)}")
+
+    if refresher.current_id == 9 and manager.targets == {}:
+        os._exit(1)

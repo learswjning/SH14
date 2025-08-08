@@ -42,10 +42,22 @@ class TargetRefresher:
         self.area_size = area_size
         self.next_refresh_step = 1200
         self.current_id = start_id
+        self.flag = 0
 
-    def refresh(self, current_step):
-        if current_step >= self.next_refresh_step:
+    def refresh(self, current_step, manager):
+        # 场上无目标时直接刷新
+        if len(manager.targets) == 0 and current_step != 0 and self.flag == 0:
+            self.next_refresh_step = current_step + 1
+            self.flag = 1
+            
+        # 间隔一定时间刷新，且仿真快结束时不刷新
+        if current_step >= self.next_refresh_step and current_step <= 13200 and self.current_id <= 8:
+            self.flag = 0
             num_targets = random.choice([0, 1, 2])
+            if self.current_id == 7:
+                num_targets = 2
+            elif self.current_id == 8:
+                num_targets = 1
             new_targets = []
             for _ in range(num_targets):
                 tid = str(self.current_id)

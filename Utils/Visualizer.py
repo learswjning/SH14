@@ -86,22 +86,8 @@ class TrajectoryVisualizer2D:
             
         # ==== 新增：显示仿真时间 ====
         # 假定每步0.5秒（如有不同请自行调整）
-        if step is not None:
-            # 确保step是数值类型
-            if isinstance(step, (list, tuple)):
-                print(f"Warning: step参数是序列类型: {step}, 使用第一个元素")
-                step_value = step[0] if len(step) > 0 else 0
-            else:
-                step_value = step
-            
-            # 进一步确保step_value是数字类型
-            try:
-                step_value = float(step_value)
-            except (ValueError, TypeError):
-                print(f"Warning: 无法将step_value转换为数字: {step_value}, 使用默认值0")
-                step_value = 0
-                
-            sim_time = step_value * 0.5  # 单位：秒
+        if step is not None:             
+            sim_time = step * 0.5  # 单位：秒
             # 移除上一次的时间文本
             if self.time_text is not None:
                 try:
@@ -128,7 +114,7 @@ class TrajectoryVisualizer2D:
         enable_history = (
             self.enable_swept_area and
             step is not None and
-            (step_value if isinstance(step, (list, tuple)) else step) * 0.5 >= self.swept_area_start_time
+            (step if isinstance(step, (list, tuple)) else step) * 0.5 >= self.swept_area_start_time
         )
         
         if enable_history:
@@ -168,7 +154,7 @@ class TrajectoryVisualizer2D:
                         heading_vec = heading
                         
                     # 只在累计区域功能打开且到达指定时间后才累计，每10步记录一次
-                    current_step = step_value if isinstance(step, (list, tuple)) else step
+                    current_step = step if isinstance(step, (list, tuple)) else step
                     if enable_history and (step is not None) and (current_step % 10 == 0):
                         if label not in self.swept_fovs:
                             self.swept_fovs[label] = []

@@ -11,7 +11,8 @@ class Manager:
     def __init__(self):
         self.vehicles = {}  # (type,id) -> object
         self.targets = {}   # id -> object
-        self.captured = None
+        self.captured = set()
+        self.detected = set()
         self.visualizer = None
         self.labels = []
         self.point_colors = []
@@ -117,7 +118,6 @@ class Manager:
             new_line_colors.append(self.line_colors[i])
             new_markers.append(self.markers[i])
             new_trajectory_visible.append(self.trajectory_visible[i])
-
             new_labels_manager.append(label)
             new_point_colors_manager.append(self.point_colors[i])
             new_line_colors_manager.append(self.line_colors[i])
@@ -141,7 +141,7 @@ class Manager:
         # 更新visualizer对象的数量
         self.visualizer.num = len(new_labels)
 
-    def update(self, control_info, t):
+    def update(self, control_info, t, mode):
         # 更新车辆和目标状态
         for typ, id_, v, omega in control_info:
             id_ = str(id_)
@@ -157,7 +157,7 @@ class Manager:
             elif typ.lower() == "target":
                 target = self.targets.get(id_)
                 if target:
-                    target.update()
+                    target.update(mode)
 
         # 计分更新
         for target in self.targets.values():
@@ -181,7 +181,7 @@ class Manager:
         to_remove = set()
         for (typ, id_), vehicle in self.vehicles.items():
             if hasattr(vehicle, 'captured') and vehicle.captured:
-                for (t, tid, pos) in vehicle.captured:
+                for (target_type, tid, pos) in vehicle.captured:
                     if tid in self.targets:
                         to_remove.add(tid)
         for tid, target in self.targets.items():
@@ -231,7 +231,7 @@ class Manager:
         total_detected = list(set(all_detected))
         return total_detected
     
-    def get_detected_all(self):
+    def get_detected_all_timely(self):
         """
         获取检测目标列表总和（去重）
         """
@@ -246,6 +246,21 @@ class Manager:
         total_detected = list(set(all_detected))
         return total_detected
     
+    def get_detected_all(self):
+
+        for vehicle in self.vehicles.values():
+            if hasattr(vehicle, 'detected') and vehicle.detected:
+                for detection in vehicle.detected:
+                    if isinstance(detection, tuple) and len(detection) >= 2:
+                        # detection格式: (time, target_id, position) 或 (time, [target_ids])
+                        if isinstance(detection[1], list):
+                            # 多个目标ID的情况
+                            for target_id in detection[1]:
+                                self.detected.add(str(target_id))
+                        else:
+                            # 单个目标ID的情况
+                            self.detected.add(str(detection[1]))
+        return list(self.detected)
 
     def get_captured(self, typ, id_):
         """
@@ -256,20 +271,35 @@ class Manager:
             return vehicle.captured
         return None
     
+    # def get_captured_all_timely(self):
+    #     """
+    #     获取 USV 1、2、3、4 的捕获目标列表总和（去重）
+    #     """
+    #     all_captured = []
+    #     typ = 'usv'
+    #     for id_ in ['1', '2', '3', '4']:
+    #         vehicle = self.vehicles.get((typ.lower(), str(id_)))
+    #         if vehicle and getattr(vehicle, 'captured', None):
+    #             for i in range(len(vehicle.captured)):
+    #                 all_captured.extend(vehicle.captured[i][1])
+    #     # 去重
+    #     total_captured = list(set(all_captured))
+    #     return total_captured
+    
     def get_captured_all(self):
-        """
-        获取 USV 1、2、3、4 的捕获目标列表总和（去重）
-        """
-        all_captured = []
-        typ = 'usv'
-        for id_ in ['1', '2', '3', '4']:
-            vehicle = self.vehicles.get((typ.lower(), str(id_)))
-            if vehicle and getattr(vehicle, 'captured', None):
-                for i in range(len(vehicle.captured)):
-                    all_captured.extend(vehicle.captured[i][1])
-        # 去重
-        total_captured = list(set(all_captured))
-        return total_captured
+
+        for vehicle in self.vehicles.values():
+            if hasattr(vehicle, 'captured') and vehicle.captured:
+                for capture in vehicle.captured:
+                    if isinstance(capture, tuple) and len(capture) >= 2:
+                        if isinstance(capture[1], list):
+                            # 多个目标ID的情况
+                            for target_id in capture[1]:
+                                self.captured.add(str(target_id))
+                        else:
+                            # 单个目标ID的情况
+                            self.captured.add(str(capture[1]))
+        return list(self.captured)
 
     def get_state(self, typ, id_):
         """
