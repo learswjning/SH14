@@ -9,18 +9,25 @@ def pi_to_pi(angle):
 class USVController:
     def __init__(self, dt=0.5):
         self.dt = dt
+        
+        # --- USV 物理参数 --- #
         self.USV_MAX_SPEED = 10.28
         self.USV_SEARCH_SPEED = 5.0 
         self.DISPOSAL_RANGE = 100.0
+        
+        # --- USV 控制参数 --- #
         self.ARRIVAL_THRESHOLD = 50.0 
         self.HEADING_KP = 2.0
-        self.AVOIDANCE_DISTANCE = 250.0
-        self.AVOIDANCE_KP = 5.0
-        self.SEARCH_DURATION_STEPS = int(60 / dt) 
+        self.AVOIDANCE_DISTANCE = 250.0   # 预警距离，避免USV相撞
+        self.AVOIDANCE_KP = 5.0   # 转向比例系数
+        self.SEARCH_DURATION_STEPS = int(60 / self.dt) 
         self.SEARCH_TURN_OMEGA = 0.2
         self.history = {}
 
-        self.standby_points = {"1": np.array([8695.0, 8695.0]), "2": np.array([565.0, 8695.0]), "3": np.array([565.0, 565.0]), "4": np.array([8695.0, 565.0])}
+        self.standby_points = {"1": np.array([8695.0, 8695.0]), 
+                               "2": np.array([565.0, 8695.0]), 
+                               "3": np.array([565.0, 565.0]), 
+                               "4": np.array([8695.0, 565.0])}
         
         self.usv_states = {
             uid: {
@@ -32,18 +39,17 @@ class USVController:
         }
 
     def _assign_new_tasks(self, manager, usv_positions):
+        all_captured_ids = manager.get_captured_all()
+        
         all_detected_ids = manager.get_detected_all()
         if not all_detected_ids: return
 
-        all_captured_ids = manager.get_captured_all()
-        # 允许已分配目标重新分配
+        # 待分配目标
         new_task_ids = [tid for tid in all_detected_ids if tid not in all_captured_ids]
-
         if not new_task_ids: return
 
-        # 所有USV都参与分配（包括IDLE和INTERCEPTING）
+        # # 所有USV都参与分配
         candidate_usv_ids = [uid for uid in self.usv_states.keys()]
-        if not candidate_usv_ids: return
 
         maybe = Maybesomewhere()
         dt = 0.05
@@ -56,11 +62,12 @@ class USVController:
         target_assignments = {}
 
         for target_id in new_task_ids:
-            if target_id not in manager.targets: continue
+            if target_id not in manager.targets: 
+                continue
             maybe.update_target_history(manager, self.history, max_history=10)
             pos_history = maybe.get_target_pos_history(self.history, target_id)
             target_velocity = maybe.estimate_velocity(pos_history, dt)
-            # print("历史", pos_history)
+
             target_position = pos_history[-1] if pos_history else manager.targets[target_id].position
             trajectory = maybe.predict_trajectory(target_position, target_velocity, duration=1000, dt=1)
             usv_pos_list = [usv_positions[uid] for uid in candidate_usv_ids]
@@ -125,20 +132,21 @@ class USVController:
                 'intercept_time': intercept_time
             })
 
-        # 先用字典收集每个目标的最佳分配                                                                        ################################################
-        best_assignment_per_target = {}                                                                    ################################################
-                                                                                                           ################################################
-        for assignment in final_assignments:                                                               ################################################
-            target_id = assignment['target_id']                                                            ################################################
-            if target_id not in best_assignment_per_target:                                                ############                       #############
-                best_assignment_per_target[target_id] = assignment                                         ############    防止目标脚踏两只船    #############
-            else:                                                                                          ############                       #############
-                # 只保留时间最短的                                                                            ################################################
-                if assignment['intercept_time'] < best_assignment_per_target[target_id]['intercept_time']: ################################################
-                    best_assignment_per_target[target_id] = assignment                                     ################################################
-                                                                                                           ################################################
-        # 只留下每个目标最快的USV分配                                                                          ################################################
-        final_assignments = list(best_assignment_per_target.values())                                      ################################################
+        # 防止同一个目标被多艘USV追击
+        # 先用字典收集每个目标的最佳分配
+        best_assignment_per_target = {}
+                                                                                                           
+        for assignment in final_assignments:
+            target_id = assignment['target_id']
+            if target_id not in best_assignment_per_target: 
+                best_assignment_per_target[target_id] = assignment
+            else:                                                                                          
+                # 只保留时间最短的                                                                            
+                if assignment['intercept_time'] < best_assignment_per_target[target_id]['intercept_time']: 
+                    best_assignment_per_target[target_id] = assignment                                     
+                                                                                                           
+        # 只留下每个目标最快的USV分配                                                                          
+        final_assignments = list(best_assignment_per_target.values())                                      
 
         # 最终更新 usv_states
         for assignment in final_assignments:
@@ -150,6 +158,7 @@ class USVController:
                 "last_known_pos": assignment['lkp']
             })
 
+    # 更新USV所追击目标的最新已知位置
     def _update_lkp_from_uav(self, manager):
         all_detected_ids = manager.get_detected_all()
         for state_info in self.usv_states.values():
@@ -158,27 +167,27 @@ class USVController:
                 if target_id in all_detected_ids and target_id in manager.targets:
                     state_info["last_known_pos"] = np.array(manager.targets[target_id].position)
 
+    # 防止USV间相撞
     def _calculate_avoidance_omega(self, self_id, self_pos, self_heading, usv_positions):
         total_repulsion_vec = np.array([0.0, 0.0])
+        
+        # 遍历其他USV位置
         for other_id, other_pos in usv_positions.items():
-            if self_id == other_id: continue
+            if self_id == other_id: 
+                continue
             dist_vec = self_pos - np.array(other_pos)
             dist = np.linalg.norm(dist_vec)
+            
             if 0 < dist < self.AVOIDANCE_DISTANCE:
                 strength = (self.AVOIDANCE_DISTANCE - dist) / self.AVOIDANCE_DISTANCE
                 total_repulsion_vec += (dist_vec / dist) * strength
+                
         if np.linalg.norm(total_repulsion_vec) > 0:
             avoidance_angle = math.atan2(total_repulsion_vec[1], total_repulsion_vec[0])
             return self.AVOIDANCE_KP * pi_to_pi(avoidance_angle - self_heading)
         return 0.0
 
     def update(self, manager):
-        all_usvs = [v for (t, _), v in manager.vehicles.items() if t == "usv"]
-        all_targets = list(manager.targets.values())
-        for usv in all_usvs:
-            if hasattr(usv, 'detect'):
-                usv.detect(vehicle_position=usv.position, targets=all_targets)
-        
         usv_positions = {uid: manager.get_state('usv', uid)[0] for uid in self.usv_states.keys()}
         
         self._update_lkp_from_uav(manager)
@@ -189,12 +198,17 @@ class USVController:
             pos, heading = np.array(usv_positions[usv_id]), manager.get_state('usv', usv_id)[1]
             v, goal_omega = self.USV_MAX_SPEED, 0.0
             current_state = state_info["state"]
-
-            if current_state == "IDLE":
-                goal = self.standby_points[usv_id]
-                if np.linalg.norm(goal - pos) < self.ARRIVAL_THRESHOLD: v = 0.0
-                else: goal_omega = self.HEADING_KP * pi_to_pi(math.atan2(goal[1] - pos[1], goal[0] - pos[0]) - heading)
             
+            # --- 空闲状态 --- #
+            if current_state == "IDLE":
+                # 前往等待点
+                goal = self.standby_points[usv_id]
+                if np.linalg.norm(goal - pos) < self.ARRIVAL_THRESHOLD: 
+                    v = 0.0
+                else: 
+                    goal_omega = self.HEADING_KP * pi_to_pi(math.atan2(goal[1] - pos[1], goal[0] - pos[0]) - heading)
+            
+            # --- 拦截状态 --- #
             elif current_state == "INTERCEPTING":
                 target_id = state_info["target_id"]
                 if target_id not in manager.targets or target_id in manager.get_captured_all():
@@ -207,6 +221,7 @@ class USVController:
                     else:
                         goal_omega = self.HEADING_KP * pi_to_pi(math.atan2(goal[1] - pos[1], goal[0] - pos[0]) - heading)
             
+            # --- 搜索状态 --- #
             elif current_state == "SEARCHING":
                 v, goal_omega = self.USV_SEARCH_SPEED, self.SEARCH_TURN_OMEGA
                 state_info["search_timer"] -= 1
@@ -217,6 +232,7 @@ class USVController:
                 elif state_info["search_timer"] <= 0:
                     state_info.update({"state": "RETURNING", "target_id": None, "last_known_pos": None})
 
+            # --- 追击状态 --- #
             elif current_state == "PURSUING":
                 target_id = state_info["target_id"]
                 if target_id not in manager.targets or target_id in manager.get_captured_all():
@@ -226,6 +242,7 @@ class USVController:
                     if np.linalg.norm(np.array(target_pos) - pos) < self.DISPOSAL_RANGE: v = 0.0
                     else: goal_omega = self.HEADING_KP * pi_to_pi(math.atan2(target_pos[1] - pos[1], target_pos[0] - pos[0]) - heading)
             
+            # --- 返航状态 --- #
             elif current_state == "RETURNING":
                 goal = self.standby_points[usv_id]
                 if np.linalg.norm(goal - pos) < self.ARRIVAL_THRESHOLD:
@@ -235,7 +252,8 @@ class USVController:
 
             avoidance_omega = self._calculate_avoidance_omega(usv_id, pos, heading, usv_positions)
             final_omega = goal_omega + avoidance_omega
-            if abs(avoidance_omega) > 0.1: v *= 0.8
+            if abs(avoidance_omega) > 0.1: 
+                v *= 0.8
             usv_controls[usv_id] = [v, final_omega]
         
         # 清理所有USV的旧分配，只保留本轮分配，防止目标脚踏两只船 

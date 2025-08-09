@@ -1,6 +1,5 @@
 import math
 import numpy as np
-from Controller.maybe import Maybesomewhere
 from .uav_fov_manager import UAVFOVManager
 
 def pi_to_pi(angle):
@@ -57,17 +56,6 @@ class UAVController:
         self.usv_states_ref = usv_states
         self.fov_manager.set_usv_states_ref(usv_states)
 
-    def set_fov_coverage_enabled(self, enabled):
-        """动态开关103秒FOV覆盖功能"""
-        self.enable_fov_coverage = enabled
-        if not enabled:
-            # 清理所有detour状态
-            for uav_id, state_info in self.uav_states.items():
-                state_info["detour_mode"] = False
-                state_info["detour_point"] = None
-            # 释放FOV管理器中的所有分配
-            self.fov_manager.release_all_assignments()
-
     def _update_target_cooldowns(self, state_info):
         for target_id in list(state_info["tracked_targets_cooldown"].keys()):
             state_info["tracked_targets_cooldown"][target_id] -= 1
@@ -77,13 +65,13 @@ class UAVController:
     def _should_start_tracking(self, target, state_info, manager):
         target_id = target[1]
         
-        # 🔥 优先检查：如果目标在USV探测范围内，立即拒绝追踪（防止摆头）
+        # 优先检查：如果目标在USV探测范围内，立即拒绝追踪（防止摆头）
         if self.fov_manager.check_usv_range_exit(target_id, target[2], manager):
             return False
             
         # 检查USV是否已经探测到这个目标
         detected_usv = manager.get_detected_usv()
-        if detected_usv and target_id in detected_usv: 
+        if detected_usv and target_id in detected_usv:
             return False
             
         # 检查目标是否在冷却期
@@ -123,7 +111,7 @@ class UAVController:
         state_info["support_timer"] = 0
 
     def _find_nearest_loop_point(self, current_pos):
-        """🔥 智能循环点选择：根据当前位置找到最近的循环点"""
+        """智能循环点选择：根据当前位置找到最近的循环点"""
         if not current_pos or len(current_pos) < 2:
             return 0  # 默认返回第一个循环点
             
@@ -247,7 +235,7 @@ class UAVController:
             state_info["uav_id"] = uav_id  # 确保uav_id被设置
             self._update_target_cooldowns(state_info)
             
-            # 🔥 优先检查：如果当前正在追击的目标进入USV范围，立即停止任务
+            # 优先检查：如果当前正在追击的目标进入USV范围，立即停止任务
             if state_info["state"] in ["TRACKING", "SUPPORTING"] and state_info["target_info"]:
                 target_id = state_info["target_info"]["id"]
                 target_pos = state_info["target_info"]["lkp"]
@@ -271,7 +259,7 @@ class UAVController:
                 if target_id in manager.get_captured_all():
                     self._end_mission_interrupt(state_info)
                     v, omega = self._calculate_patrol_movement(state_info, pos, heading)
-                # 🔥 检查目标是否进入USV范围，如果是则立即停止追踪（目标已从全局列表移除）
+                # 检查目标是否进入USV范围，如果是则立即停止追踪（目标已从全局列表移除）
                 elif self.fov_manager.check_usv_range_exit(target_id, state_info["target_info"]["lkp"], manager):
                     # 目标进入USV范围，立即结束追踪任务
                     self._end_mission_interrupt(state_info)
@@ -308,7 +296,7 @@ class UAVController:
                 if target_id in manager.get_captured_all():
                     self._end_mission_interrupt(state_info)
                     v, omega = self._calculate_patrol_movement(state_info, pos, heading)
-                # 🔥 检查目标是否进入USV范围，如果是则立即停止支援（目标已从全局列表移除）
+                # 检查目标是否进入USV范围，如果是则立即停止支援（目标已从全局列表移除）
                 elif self.fov_manager.check_usv_range_exit(target_id, state_info["target_info"]["lkp"], manager):
                     # 目标进入USV范围，立即结束支援任务
                     self._end_mission_interrupt(state_info)
@@ -336,22 +324,8 @@ class UAVController:
             uav_controls[uav_id] = [v, omega]
         self.fix_patrol_point_conflict()
 
-        # 🔥 取消同步检查：移除原有的同步逻辑，UAV各自独立巡逻
+        # 取消同步检查：移除原有的同步逻辑，UAV各自独立巡逻
         for i, control_item in enumerate(controls):
             if control_item[0] == 'uav':
                 if control_item[1] in uav_controls: controls[i][2:4] = uav_controls[control_item[1]]
         return controls
-
-    def get_planning_status(self):
-        """获取FOV规划状态 - 委托给FOV管理器"""
-        if self.enable_fov_coverage:
-            status = self.fov_manager.get_planning_status()
-            status["fov_coverage_enabled"] = True
-            return status
-        else:
-            return {
-                "fov_coverage_enabled": False,
-                "global_targets": 0,
-                "urgent_targets": 0,
-                "target_details": {}
-            }

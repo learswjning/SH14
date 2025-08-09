@@ -649,11 +649,3 @@ class UAVFOVManager:
         """释放所有UAV的目标分配"""
         for target_info in self.global_targets.values():
             target_info["assigned_uav"] = None
-
-    def get_planning_status(self):
-        """获取规划状态"""
-        return {
-            "global_targets": len(self.global_targets),
-            "urgent_targets": len(self._get_urgent_targets()),
-            "early_planning_interval": 50.0
-        }
