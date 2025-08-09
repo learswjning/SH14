@@ -3,7 +3,9 @@ import os
 import sys
 import random
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from Utils.Points import read_random_line_as_coordinates
+from Utils.Points import TargetInit
+
+targetinit = TargetInit()
 
 class Target():
     def __init__(self, id, init_t, dt=0.5, max_speed=7.72):
@@ -18,7 +20,7 @@ class Target():
         self.dt = dt
         self.max_speed = max_speed  # 最大速度
 
-        self.coords_list = read_random_line_as_coordinates("Vehicle/region_trajectories_start_modified.csv")
+        self.coords_list = targetinit.getTraj("Vehicle/region_trajectories_start_modified.csv")
         self.current_index = 0
 
         self.position = self.coords_list[0]

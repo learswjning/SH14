@@ -1,8 +1,8 @@
 import os
 from Utils.Manager import Manager
 from Utils.Refresher import TargetRefresher
-from Controller.control import UAVController
-from Controller.control import USVController
+from Controller.UAVcontrol import UAVController
+from Controller.USVcontrol import USVController
 from Utils.Scorer import score1, score2
 
 # --- 系统初始化 --- #
