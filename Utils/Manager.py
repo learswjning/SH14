@@ -46,17 +46,6 @@ class Manager:
             self.line_colors.append("b")
             self.markers.append("s")
             self.trajectory_visible.append(False)
-
-    # def init_targets(self, target_list, t):
-    #     for id_ in target_list:
-    #         id_ = str(id_)
-    #         obj = Target(id=id_, init_t=t)
-    #         self.targets[id_] = obj
-    #         self.labels.append(f"Target{id_}")
-    #         self.point_colors.append("k")
-    #         self.line_colors.append("k")
-    #         self.markers.append("x")
-    #         self.trajectory_visible.append(False)
             
     def add_targets(self, new_target_list, t):
         for id_ in new_target_list:
@@ -80,7 +69,6 @@ class Manager:
     def init_objects(self, uavs, usvs):
         self.init_uavs(uavs)
         self.init_usvs(usvs)
-        # self.init_targets(targets, t)
 
         self.visualizer = TrajectoryVisualizer2D(
             labels=self.labels,
@@ -142,18 +130,18 @@ class Manager:
         self.visualizer.num = len(new_labels)
 
     def update(self, control_info, t, mode):
-        # 更新车辆和目标状态
+        # 更新UAV、USV和目标状态
         for typ, id_, v, omega in control_info:
             id_ = str(id_)
             if typ.lower() in ("uav", "usv"):
                 vehicle = self.vehicles.get((typ.lower(), id_))
                 if vehicle:
                     vehicle.update(v, omega,
-                                uavs=[v for (t, _), v in self.vehicles.items() if t == "uav"],
-                                usvs=[v for (t, _), v in self.vehicles.items() if t == "usv"],
+                                uavs=[v for (type, _), v in self.vehicles.items() if type == "uav"],
+                                usvs=[v for (type, _), v in self.vehicles.items() if type == "usv"],
                                 targets=list(self.targets.values()))
                 else:
-                    print(f"未找到车辆 {typ} {id_}")
+                    print(f"未找到 {typ} {id_}")
             elif typ.lower() == "target":
                 target = self.targets.get(id_)
                 if target:
@@ -163,7 +151,8 @@ class Manager:
         for target in self.targets.values():
             detect = any(target.id in (d[1] if isinstance(d, tuple) else d)
                          for vehicle in self.vehicles.values()
-                         if hasattr(vehicle, 'detected') and vehicle.detected
+                        #  if hasattr(vehicle, 'detected') and vehicle.detected
+                         if vehicle.detected
                          for d in vehicle.detected)
             
             capture = any(

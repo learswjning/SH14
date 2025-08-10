@@ -15,6 +15,7 @@ class UAVController:
         self.UAV_MAX_SPEED = 33.3
         self.UAV_SEARCH_SPEED = 33.3
         self.UAV_TURN_SPEED = 33.3
+        self.UAV_TRACK_SPEED = 7.72
         self.UAV_MIN_TURN_RADIUS = 100.0
         
         # --- UAV 控制参数 --- #
@@ -46,8 +47,31 @@ class UAVController:
 
         # UAV 初始任务分配
         self.uav_states = {
-            "1": {"state": "INITIAL_MOVE", "path": ['P2', 'P3', 'P4', 'P5', 'TL'], "waypoint_idx": 0, "loiter_steps_left": 0, "loop_idx": 0, "tracking_timer": 0, "support_timer": 0, "target_info": None, "pre_mission_state": None, "tracked_targets_cooldown": {}, "detour_point": None, "detour_mode": False},
-            "2": {"state": "INITIAL_MOVE", "path": ['Q2', 'Q3', 'Q4', 'Q5', 'BR'], "waypoint_idx": 0, "loiter_steps_left": 0, "loop_idx": 0, "tracking_timer": 0, "support_timer": 0, "target_info": None, "pre_mission_state": None, "tracked_targets_cooldown": {}, "detour_point": None, "detour_mode": False}
+            "1": {"state": "INITIAL_MOVE", 
+                  "path": ['P2', 'P3', 'P4', 'P5', 'TL'], 
+                  "waypoint_idx": 0, 
+                  "loiter_steps_left": 0, 
+                  "loop_idx": 0, 
+                  "tracking_timer": 0, 
+                  "support_timer": 0, 
+                  "target_info": None, 
+                  "pre_mission_state": None, 
+                  "tracked_targets_cooldown": {}, 
+                  "detour_point": None, 
+                  "detour_mode": False},
+            
+            "2": {"state": "INITIAL_MOVE", 
+                  "path": ['Q2', 'Q3', 'Q4', 'Q5', 'BR'], 
+                  "waypoint_idx": 0, 
+                  "loiter_steps_left": 0, 
+                  "loop_idx": 0, 
+                  "tracking_timer": 0, 
+                  "support_timer": 0, 
+                  "target_info": None, 
+                  "pre_mission_state": None, 
+                  "tracked_targets_cooldown": {}, 
+                  "detour_point": None, 
+                  "detour_mode": False}
         }
         self.usv_states_ref = None
     
@@ -81,9 +105,14 @@ class UAVController:
         return True
 
     def _start_mission_interrupt(self, new_state, target, state_info):
-        state_info["pre_mission_state"] = {"state": state_info["state"], "waypoint_idx": state_info["waypoint_idx"], "loiter_steps_left": state_info["loiter_steps_left"], "loop_idx": state_info["loop_idx"]}
+        state_info["pre_mission_state"] = {"state": state_info["state"], 
+                                           "waypoint_idx": state_info["waypoint_idx"], 
+                                           "loiter_steps_left": state_info["loiter_steps_left"], 
+                                           "loop_idx": state_info["loop_idx"]}
+        
         state_info["state"] = new_state
         state_info["target_info"] = {"id": target[1], "lkp": np.array(target[2])}
+        
         if new_state == "TRACKING":
             state_info["tracking_timer"] = self.TARGET_TRACKING_DURATION
         elif new_state == "SUPPORTING":
@@ -316,7 +345,7 @@ class UAVController:
                 if detected_targets and self._should_start_tracking(detected_targets[0], state_info, manager):
                     self._start_mission_interrupt("TRACKING", detected_targets[0], state_info)
                     # 开始追踪后，立即计算追踪移动指令
-                    v, omega = self._move_to_waypoint(pos, heading, state_info["target_info"]["lkp"], self.UAV_MAX_SPEED)
+                    v, omega = self._move_to_waypoint(pos, heading, state_info["target_info"]["lkp"], self.UAV_TRACK_SPEED)
                 else:
                     # 执行巡逻移动（包含动态detour逻辑）
                     v, omega = self._calculate_patrol_movement(state_info, pos, heading)

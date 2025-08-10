@@ -599,13 +599,6 @@ class UAVFOVManager:
         # 不做符号限制，允许正负，FOV detour不受control影响
         return self.UAV_SEARCH_SPEED, angle_diff
 
-    # 简化的辅助方法
-    def release_uav_targets(self, uav_id):
-        """释放UAV目标分配"""
-        for target_info in self.global_targets.values():
-            if target_info.get("assigned_uav") == uav_id:
-                target_info["assigned_uav"] = None
-
     def _get_current_target_waypoint(self, state_info):
         """获取UAV当前应该前往的目标路径点"""
         if state_info["state"] == "TRAVELING":
@@ -625,27 +618,3 @@ class UAVFOVManager:
         
         # 默认返回中心点
         return np.array([4630.0, 4630.0])
-
-    def cleanup_failed_detour_tasks(self, uav_id, uav_state):
-        """清理失败的detour任务"""
-        if not uav_id:
-            return
-            
-        # 释放所有分配给该UAV的目标
-        for target_info in self.global_targets.values():
-            if target_info.get("assigned_uav") == uav_id:
-                target_info["assigned_uav"] = None
-        
-        # 停止detour模式
-        uav_state["detour_mode"] = False
-        uav_state["detour_point"] = None
-
-    def assign_target_to_uav(self, target_id, uav_id):
-        """将目标分配给UAV"""
-        if target_id in self.global_targets:
-            self.global_targets[target_id]["assigned_uav"] = uav_id
-
-    def release_all_assignments(self):
-        """释放所有UAV的目标分配"""
-        for target_info in self.global_targets.values():
-            target_info["assigned_uav"] = None
