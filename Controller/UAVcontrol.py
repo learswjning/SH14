@@ -1,6 +1,6 @@
 import math
 import numpy as np
-from .uav_fov_manager import UAVFOVManager
+from UAVassist import UAVassist
 
 def pi_to_pi(angle):
     """将角度归一化到 [-pi, pi] 范围内"""
@@ -43,7 +43,7 @@ class UAVController:
         self.enable_fov_coverage = enable_fov_coverage
         
         # 初始化 FOV 管理器
-        self.fov_manager = UAVFOVManager(dt=self.dt)
+        self.fov_manager = UAVassist(dt=self.dt)
 
         # UAV 初始任务分配
         self.uav_states = {

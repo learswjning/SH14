@@ -12,7 +12,7 @@ def pi_to_pi(angle):
     return (angle + math.pi) % (2 * math.pi) - math.pi
 
 
-class UAVFOVManager:
+class UAVassist:
     # 类级常量 - 减少重复定义
     WAYPOINTS = {
         'BR': np.array([6680.0, 2580.0]), 'TR': np.array([6680.0, 6680.0]),

@@ -1,6 +1,6 @@
 import numpy as np
 
-class Maybesomewhere:
+class USVassist:
     def update_target_history(self,manager, history, max_history=6):
         """
         用manager.get_detected_all()和manager.targets实时更新目标历史位置

@@ -1,6 +1,6 @@
 import math
 import numpy as np
-from Controller.maybe import Maybesomewhere
+from Controller.USVassist import USVassist
 
 def pi_to_pi(angle):
     """将角度归一化到 [-pi, pi] 范围内"""
@@ -51,7 +51,7 @@ class USVController:
         # # 所有USV都参与分配
         candidate_usv_ids = [uid for uid in self.usv_states.keys()]
 
-        maybe = Maybesomewhere()
+        maybe = USVassist()
         dt = 0.05
 
         # 记录已分配 USV ID，避免冲突
