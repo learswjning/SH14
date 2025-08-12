@@ -1,7 +1,5 @@
 **/__pycache__/
 
-Vehicle/region_trajectories_start_modified.csv
-
 trajectory_part.zarr
 
 Test/
