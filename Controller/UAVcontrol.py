@@ -1,6 +1,6 @@
 import math
 import numpy as np
-from UAVassist import UAVassist
+from Controller.UAVassist import UAVassist
 
 def pi_to_pi(angle):
     """将角度归一化到 [-pi, pi] 范围内"""
